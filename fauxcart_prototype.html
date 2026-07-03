@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FauxCart — Phantom Shopping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-mist:#EDE7F6;
+    --surface:#FFFFFF;
+    --ink:#2A1B3D;
+    --ink-soft:#6B5B7A;
+    --coin:#F2A65A;
+    --coin-deep:#C97F35;
+    --mint:#7FCFA4;
+    --mint-soft:#E3F5EC;
+    --line:#DDD4EC;
+    --warn:#E4785C;
+    --lav:#B7A6E0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    background:linear-gradient(160deg,#E4DEF6,#D9CFF0 60%,#EDE7F6);
+    min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    padding:28px 12px;
+    color:var(--ink);
+  }
+  .phone{
+    width:390px;
+    max-width:100%;
+    height:780px;
+    background:var(--bg-mist);
+    border-radius:38px;
+    box-shadow:0 30px 60px -20px rgba(42,27,61,0.45), 0 0 0 10px #1c1226;
+    overflow:hidden;
+    position:relative;
+    display:flex;flex-direction:column;
+  }
+  .statusbar{
+    height:30px;flex:0 0 30px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 24px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);
+  }
+  .topbar{
+    flex:0 0 auto;padding:2px 20px 14px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .wordmark{font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:22px;letter-spacing:-0.5px;}
+  .wordmark span{color:var(--coin-deep);font-style:normal;}
+  .coinpill{
+    display:flex;align-items:center;gap:6px;
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:999px;padding:6px 12px;
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:500;
+    cursor:pointer;
+  }
+  .coinpill .dot{width:8px;height:8px;border-radius:50%;background:var(--coin);}
+  .screen{
+    flex:1;overflow-y:auto;padding:4px 18px 90px;
+    scrollbar-width:none;
+  }
+  .screen::-webkit-scrollbar{display:none;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-soft);margin:14px 0 6px;}
+  h1.pagetitle{font-family:'Fraunces',serif;font-weight:600;font-size:26px;margin:0 0 4px;letter-spacing:-0.3px;}
+  .sub{color:var(--ink-soft);font-size:13.5px;margin:0 0 16px;line-height:1.5;}
+  .chiprow{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:6px;}
+  .chip{
+    flex:0 0 auto;background:var(--surface);border:1px solid var(--line);
+    padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:600;cursor:pointer;
+  }
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .card{
+    background:var(--surface);border-radius:18px;padding:12px;
+    border:1px solid var(--line);cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .card:active{transform:scale(0.97);}
+  .thumb{
+    width:100%;aspect-ratio:1/1;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;font-size:38px;
+    margin-bottom:10px;
+  }
+  .pname{font-size:13.5px;font-weight:600;margin:0 0 2px;line-height:1.3;}
+  .pcat{font-size:11px;color:var(--ink-soft);margin:0 0 8px;}
+  .pprice{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--coin-deep);display:flex;align-items:center;gap:4px;}
+  .receipt{
+    background:var(--surface);border-radius:16px;border:1px solid var(--line);
+    padding:16px;position:relative;margin-bottom:14px;
+  }
+  .receipt::after{
+    content:"";position:absolute;left:0;right:0;bottom:-1px;height:10px;
+    background-image:radial-gradient(circle at 8px 0, transparent 8px, var(--bg-mist) 9px);
+    background-size:16px 10px;background-repeat:repeat-x;
+  }
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .btn{
+    width:100%;border:none;border-radius:14px;padding:15px;
+    font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14.5px;
+    cursor:pointer;text-align:center;
+  }
+  .btn-primary{background:var(--ink);color:#fff;}
+  .btn-primary:disabled{background:#C6BFD6;cursor:not-allowed;}
+  .btn[disabled]{opacity:0.55;cursor:not-allowed;}
+  .btn-mint{background:var(--mint);color:#173323;}
+  .btn-ghost{background:transparent;border:1.5px solid var(--ink);color:var(--ink);}
+  .btn-warn{background:var(--warn);color:#fff;}
+  .btn-sm{padding:9px 14px;font-size:12.5px;border-radius:10px;width:auto;}
+  .backrow{display:flex;align-items:center;gap:10px;margin:8px 0 10px;cursor:pointer;color:var(--ink-soft);font-size:13px;font-weight:600;}
+  .stamp{
+    width:150px;height:150px;margin:14px auto 6px;position:relative;
+  }
+  .stamp svg{width:100%;height:100%;}
+  .timeline{margin:18px 0;}
+  .tl-item{display:flex;gap:12px;padding-bottom:22px;position:relative;}
+  .tl-item::before{content:"";position:absolute;left:9px;top:22px;bottom:0;width:2px;background:var(--line);}
+  .tl-item:last-child::before{display:none;}
+  .tl-dot{width:20px;height:20px;border-radius:50%;flex:0 0 20px;display:flex;align-items:center;justify-content:center;font-size:10px;background:var(--line);color:transparent;}
+  .tl-dot.done{background:var(--mint);color:#173323;}
+  .tl-label{font-weight:700;font-size:13.5px;}
+  .tl-time{font-size:11.5px;color:var(--ink-soft);margin-top:1px;}
+  .notif{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:10px 12px;font-size:12px;margin-bottom:8px;display:flex;gap:8px;align-items:flex-start;
+  }
+  .vaultcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px;}
+  .ring{width:44px;height:44px;flex:0 0 44px;}
+  .empty{text-align:center;padding:60px 20px;color:var(--ink-soft);}
+  .empty .e-emoji{font-size:36px;margin-bottom:10px;}
+  .navbar{
+    position:absolute;left:0;right:0;bottom:0;height:74px;
+    background:rgba(255,255,255,0.88);backdrop-filter:blur(10px);
+    border-top:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-around;
+    padding-bottom:10px;
+  }
+  .navitem{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--ink-soft);font-size:10px;font-weight:600;position:relative;}
+  .navitem.active{color:var(--ink);}
+  .navitem .ic{font-size:19px;}
+  .badge{
+    position:absolute;top:-4px;right:-10px;background:var(--warn);color:#fff;
+    font-size:9px;font-weight:700;border-radius:999px;padding:1px 5px;min-width:14px;text-align:center;
+  }
+  .slider{width:100%;accent-color:var(--ink);}
+  .walletcard{background:linear-gradient(135deg,#2A1B3D,#4A2E63);color:#fff;border-radius:20px;padding:22px;margin-bottom:16px;}
+  .walletcard .lbl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.65;}
+  .walletcard .bal{font-family:'Fraunces',serif;font-size:38px;font-weight:600;margin:4px 0 10px;}
+  .streakwrap{display:flex;gap:5px;margin-top:12px;}
+  .streakday{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,0.2);}
+  .streakday.on{background:var(--coin);}
+  .fieldrow{display:flex;justify-content:space-between;align-items:center;margin:14px 0 4px;font-size:12.5px;font-weight:600;}
+  .pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--mint);flex:0 0 8px;animation:pulse 1.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(1.4);}}
+  #toastEl{transition:opacity .25s ease;}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px;}
+  .key{
+    aspect-ratio:1;border-radius:50%;background:var(--surface);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;
+    cursor:pointer;font-family:'IBM Plex Mono',monospace;user-select:none;
+  }
+  .key:active{background:var(--line);}
+  .dots{display:flex;gap:16px;justify-content:center;margin:22px 0 6px;}
+  .pdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);background:transparent;transition:background .15s;}
+  .pdot.filled{background:var(--ink);}
+  .fingerprint-wrap{display:flex;flex-direction:column;align-items:center;margin:36px 0;}
+  .fp-circle{
+    width:118px;height:118px;border-radius:50%;background:var(--surface);border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:46px;cursor:pointer;
+  }
+  .fp-circle.scanning{animation:fpscan 1s ease-in-out infinite;border-color:var(--mint);}
+  .fp-circle.success{background:var(--mint-soft);border-color:var(--mint);color:#173323;}
+  @keyframes fpscan{0%,100%{box-shadow:0 0 0 0 rgba(127,207,164,0.45);}50%{box-shadow:0 0 0 16px rgba(127,207,164,0);}}
+  .phone.onboarding .topbar,.phone.onboarding .navbar{display:none;}
+  .phone.onboarding .screen{padding-bottom:24px;}
+  .onb-wrap{display:flex;flex-direction:column;min-height:100%;padding-top:40px;}
+  .onb-hero{font-size:52px;text-align:center;margin-bottom:6px;}
+  .onb-title{font-family:'Fraunces',serif;font-weight:600;font-size:28px;text-align:center;letter-spacing:-0.3px;margin:6px 0 8px;}
+  .onb-sub{color:var(--ink-soft);font-size:13.5px;text-align:center;line-height:1.55;margin:0 24px 28px;}
+  .onb-spacer{flex:1;}
+  .interest-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;}
+  .interest-card{
+    background:var(--surface);border:1.5px solid var(--line);border-radius:16px;
+    padding:18px 10px;text-align:center;cursor:pointer;font-weight:700;font-size:13px;
+  }
+  .interest-card .ic-emoji{font-size:26px;display:block;margin-bottom:8px;}
+  .interest-card.selected{border-color:var(--ink);background:var(--mint-soft);}
+  .shake{animation:shakeit .4s;}
+  @keyframes shakeit{10%,90%{transform:translateX(-4px);}20%,80%{transform:translateX(4px);}30%,70%{transform:translateX(-6px);}40%,60%{transform:translateX(6px);}50%{transform:translateX(-4px);}}
+  .skiplink{text-align:center;font-size:12.5px;color:var(--ink-soft);font-weight:600;margin-top:14px;cursor:pointer;text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar"><span id="clock">9:41</span><span>FauxCart Sandbox</span></div>
+  <div class="topbar">
+    <div class="wordmark">Faux<span>Cart</span></div>
+    <div class="coinpill" onclick="go('wallet')"><span class="dot"></span><span id="coinpillnum"></span> FC</div>
+  </div>
+  <div class="screen" id="screen"></div>
+  <div class="navbar">
+    <div class="navitem" data-v="home" onclick="go('home')"><span class="ic">🏬</span>Shop</div>
+    <div class="navitem" data-v="cart" onclick="go('cart')" style="position:relative;"><span class="ic">🧺</span>Cart<span class="badge" id="cartbadge" style="display:none;"></span></div>
+    <div class="navitem" data-v="vault" onclick="go('vault')" style="position:relative;"><span class="ic">🗄️</span>Vault<span class="badge" id="vaultbadge" style="display:none;"></span></div>
+    <div class="navitem" data-v="wallet" onclick="go('wallet')"><span class="ic">🪙</span>Wallet</div>
+  </div>
+</div>
+
+<script>
+const PRODUCTS = [
+  // Gadgets — spans a real accessory-to-flagship-device range, same as actual retail
+  {id:1,name:"Cloudform Wireless Earbuds",cat:"Gadgets",price:129,emoji:"🎧",bg:"#E7E1FA",blurb:"Noise-isolating buds with a matte-soft case, mid-range ANC performance."},
+  {id:2,name:"Iridescent Phone Case",cat:"Gadgets",price:22,emoji:"📱",bg:"#E1F0FA",blurb:"Shifts color in the light. Drop-tested (in the simulation, at least)."},
+  {id:3,name:"Woven Watch Band",cat:"Gadgets",price:19,emoji:"⌚",bg:"#EAE6FA",blurb:"Adjustable nylon weave, brushed clasp. Fits most standard lugs."},
+  {id:4,name:"Aurora Smartwatch",cat:"Gadgets",price:249,emoji:"⌚",bg:"#DDEAF7",blurb:"Heart-rate, sleep, and GPS tracking with a 2-day battery."},
+  {id:5,name:"Portable Bluetooth Speaker",cat:"Gadgets",price:79,emoji:"🔊",bg:"#E5EEF9",blurb:"Water-resistant, 12-hour playtime, surprisingly loud for its size."},
+  {id:6,name:"Flagship Smartphone",cat:"Gadgets",price:999,emoji:"📲",bg:"#E9E4F6",blurb:"Latest-gen chip, triple camera, the one everyone's been eyeing."},
+  // Fashion — apparel and accessories at typical mid-market pricing
+  {id:7,name:"Trailrunner Knit Sneakers",cat:"Fashion",price:68,emoji:"👟",bg:"#FDEBD8",blurb:"Breathable knit upper, foam sole. That first-unbox smell, simulated faithfully."},
+  {id:8,name:"Oversized Fleece Hoodie",cat:"Fashion",price:54,emoji:"🧥",bg:"#F3E3EC",blurb:"Heavyweight fleece, dropped shoulder. The one you'd wear on a Sunday."},
+  {id:9,name:"Polarized Sunglasses",cat:"Fashion",price:89,emoji:"🕶️",bg:"#F6E9DD",blurb:"UV400 protection, spring hinges, a case included."},
+  {id:10,name:"Canvas Weekender Backpack",cat:"Fashion",price:65,emoji:"🎒",bg:"#F0E5D6",blurb:"Water-resistant canvas, padded laptop sleeve, room for a weekend."},
+  // Home — small comforts through mid-ticket appliances
+  {id:11,name:"Amber Fig Soy Candle",cat:"Home",price:26,emoji:"🕯️",bg:"#FBE6D0",blurb:"40-hour burn, hand-poured. Scent notes: warm fig, cedar, a little vanilla."},
+  {id:12,name:"Ceramic Desk Planter",cat:"Home",price:19,emoji:"🪴",bg:"#E4F3E6",blurb:"Speckled glaze, drainage dish included. Pairs well with a small pothos."},
+  {id:13,name:"Ribbed Throw Blanket",cat:"Home",price:38,emoji:"🧶",bg:"#F1E7F5",blurb:"Chunky knit, machine washable, oversized for couch-draping."},
+  {id:14,name:"Pour-Over Coffee Maker",cat:"Home",price:42,emoji:"☕",bg:"#EFE2D3",blurb:"Glass carafe, reusable filter, the ritual before the caffeine hits."},
+  {id:15,name:"Compact Air Fryer",cat:"Home",price:89,emoji:"🍟",bg:"#F5E9DC",blurb:"3.5-quart basket, one-touch presets, fits on a narrow counter."},
+  // Beauty — everyday-priced through a slightly premium serum
+  {id:16,name:"Tinted Lip Balm Trio",cat:"Beauty",price:15,emoji:"💄",bg:"#FBE2E6",blurb:"Three shades, sheer finish. Comes in a little card sleeve."},
+  {id:17,name:"Niacinamide Serum",cat:"Beauty",price:42,emoji:"🧴",bg:"#FCE8EF",blurb:"10% niacinamide, fragrance-free, the one every routine seems to have."},
+  {id:18,name:"Sonic Electric Toothbrush",cat:"Beauty",price:89,emoji:"🪥",bg:"#E3F1F4",blurb:"Rechargeable, 3 modes, a 2-minute built-in timer."},
+];
+const STAGES = ["Placed","Preparing","Shipped","Out for Delivery","Delivered"];
+const STAGE_NOTIFS = [
+  "Order confirmed — we're getting it ready.",
+  "Your item has been picked and packed at the fulfillment hub.",
+  "Package has departed the fulfillment hub.",
+  "Out for delivery — arriving today.",
+  "Delivered. It's in your Vault now."
+];
+
+let state = {
+  view:"welcome",
+  onboarded:false,
+  coins:380,
+  streak:2,
+  budgetSync:false,
+  lastClaimDate:null,
+  cart:[],
+  orders:[],
+  vault:[],
+  filter:"All",
+  selected:null,
+  openOrder:null,
+  authMethod:"passcode",
+  passcodeInput:"",
+  verifying:false,
+  authSuccess:false,
+  authError:false,
+  userPasscode:null,
+  setupStage:"enter",
+  setupFirst:"",
+  setupSecond:"",
+  setupError:false,
+  interests:[],
+};
+
+function fmt(n){ return n.toLocaleString(); }
+function todayKey(){ return new Date().toDateString(); }
+function claimDaily(){
+  if(state.lastClaimDate === todayKey()) return;
+  state.coins += 500;
+  state.streak = Math.min(7, state.streak + 1);
+  state.lastClaimDate = todayKey();
+  toast("500 FC claimed for today");
+  render();
+}
+function findProduct(id){ return PRODUCTS.find(p=>p.id===id); }
+
+function go(view, extra){
+  state.view = view;
+  if(extra) Object.assign(state, extra);
+  render();
+}
+
+function addToCart(id){
+  const line = state.cart.find(c=>c.id===id);
+  if(line) line.qty++; else state.cart.push({id, qty:1});
+  render();
+}
+function removeFromCart(id){
+  state.cart = state.cart.filter(c=>c.id!==id);
+  render();
+}
+function cartTotal(){
+  return state.cart.reduce((sum,c)=>sum + findProduct(c.id).price*c.qty, 0);
+}
+
+function placeOrder(){
+  const total = cartTotal();
+  if(total > state.coins || state.cart.length===0) return;
+  state.coins -= total;
+  const order = {
+    id: "FX-" + Math.floor(1000+Math.random()*9000),
+    items: state.cart.map(c=>({...findProduct(c.id), qty:c.qty})),
+    total,
+    stage: 0,
+    placedAt: new Date(),
+    delivered:false,
+    nextEta: null
+  };
+  state.orders.unshift(order);
+  state.cart = [];
+  state.openOrder = order.id;
+  state.view = "confirm";
+  scheduleOrderProgress(order);
+  render();
+}
+
+function getOrder(id){ return state.orders.find(o=>o.id===id); }
+
+// Stages advance on their own with a randomized delay, like a real courier update —
+// never on demand. Delays here are compressed for demo purposes (seconds instead of
+// hours) but the mechanic is the same: the person waits, they don't summon it.
+function scheduleOrderProgress(order){
+  const stepDelay = ()=> 9000 + Math.random()*14000; // ~9-23s per stage, randomized
+  function next(){
+    if(order.stage >= STAGES.length-1) return;
+    const delay = stepDelay();
+    order.nextEta = Date.now() + delay;
+    render();
+    setTimeout(()=>{
+      advanceStage(order.id);
+      if(order.stage < STAGES.length-1) next();
+    }, delay);
+  }
+  next();
+}
+
+function advanceStage(id){
+  const o = getOrder(id);
+  if(!o || o.stage >= STAGES.length-1) return;
+  o.stage++;
+  o.nextEta = null;
+  if(o.stage === STAGES.length-1){
+    o.delivered = true;
+    o.items.forEach(it=>{
+      state.vault.push({...it, orderId:o.id, cooling:0});
+    });
+  }
+  render();
+}
+
+// Keep the tracking screen's countdown ticking without needing a stage change.
+setInterval(()=>{ if(state.view==='tracking') render(); }, 1000);
+
+function coolMore(vaultIdx){
+  state.vault[vaultIdx].cooling = Math.min(100, state.vault[vaultIdx].cooling + 25);
+  render();
+}
+
+function archiveVaultItem(vaultIdx, toReal){
+  const item = state.vault[vaultIdx];
+  if(toReal){
+    const q = encodeURIComponent(item.name);
+    window.open("https://www.google.com/search?tbm=shop&q=" + q, "_blank");
+  }
+  state.vault.splice(vaultIdx,1);
+  render();
+}
+
+function render(){
+  document.querySelector('.phone').classList.toggle('onboarding', ['welcome','setpasscode','interests'].includes(state.view));
+  document.getElementById('coinpillnum').textContent = fmt(state.coins);
+  const cartCount = state.cart.reduce((s,c)=>s+c.qty,0);
+  const cb = document.getElementById('cartbadge');
+  cb.style.display = cartCount>0 ? 'block':'none'; cb.textContent = cartCount;
+  const vb = document.getElementById('vaultbadge');
+  vb.style.display = state.vault.length>0 ? 'block':'none'; vb.textContent = state.vault.length;
+  document.querySelectorAll('.navitem').forEach(n=>{
+    n.classList.toggle('active', n.dataset.v === (['home','product'].includes(state.view)?'home':state.view==='checkout'||state.view==='auth'||state.view==='confirm'||state.view==='tracking'?'cart':state.view));
+  });
+
+  const s = document.getElementById('screen');
+  if(state.view==='welcome') s.innerHTML = viewWelcome();
+  else if(state.view==='setpasscode') s.innerHTML = viewSetPasscode();
+  else if(state.view==='interests') s.innerHTML = viewInterests();
+  else if(state.view==='home') s.innerHTML = viewHome();
+  else if(state.view==='product') s.innerHTML = viewProduct();
+  else if(state.view==='cart') s.innerHTML = viewCart();
+  else if(state.view==='checkout') s.innerHTML = viewCheckout();
+  else if(state.view==='auth') s.innerHTML = viewAuth();
+  else if(state.view==='confirm') s.innerHTML = viewConfirm();
+  else if(state.view==='tracking') s.innerHTML = viewTracking();
+  else if(state.view==='vault') s.innerHTML = viewVault();
+  else if(state.view==='wallet') s.innerHTML = viewWallet();
+}
+
+function viewWelcome(){
+  return `
+    <div class="onb-wrap">
+      <div class="onb-hero">🛍️</div>
+      <div class="onb-title">Welcome to FauxCart</div>
+      <p class="onb-sub">A phantom shopping app. Browse, buy, and "receive" packages with zero real money — built to redirect the urge to spend, not suppress it.</p>
+      <div class="onb-spacer"></div>
+      <button class="btn btn-primary" onclick="go('setpasscode',{setupStage:'enter',setupFirst:'',setupSecond:'',setupError:false})">Get Started</button>
+      <p class="onb-sub" style="margin-top:14px;font-size:11.5px;">Everything in this app is simulated. No real payment method is ever connected.</p>
+    </div>`;
+}
+
+function pressSetupDigit(d){
+  if(state.setupStage==='enter'){
+    if(state.setupFirst.length>=4) return;
+    state.setupFirst += d;
+    render();
+    if(state.setupFirst.length===4){
+      setTimeout(()=>{ state.setupStage='confirm'; render(); }, 300);
+    }
+  } else {
+    if(state.setupSecond.length>=4) return;
+    state.setupSecond += d;
+    render();
+    if(state.setupSecond.length===4){
+      if(state.setupSecond === state.setupFirst){
+        state.userPasscode = state.setupFirst;
+        setTimeout(()=>{ go('interests'); }, 400);
+      } else {
+        state.setupError = true;
+        render();
+        setTimeout(()=>{
+          state.setupFirst=''; state.setupSecond=''; state.setupStage='enter'; state.setupError=false;
+          render();
+        }, 950);
+      }
+    }
+  }
+}
+function backspaceSetupDigit(){
+  if(state.setupStage==='enter') state.setupFirst = state.setupFirst.slice(0,-1);
+  else state.setupSecond = state.setupSecond.slice(0,-1);
+  render();
+}
+
+function viewSetPasscode(){
+  const current = state.setupStage==='enter' ? state.setupFirst : state.setupSecond;
+  const dots = Array.from({length:4}).map((_,i)=>`<div class="pdot ${i<current.length?'filled':''}"></div>`).join('');
+  const keys = [1,2,3,4,5,6,7,8,9,'',0,'⌫'];
+  return `
+    <div class="eyebrow" style="margin-top:26px;">Step 1 of 2</div>
+    <h1 class="pagetitle">${state.setupStage==='enter' ? 'Create a faux passcode' : 'Confirm your passcode'}</h1>
+    <p class="sub">${state.setupStage==='enter'
+      ? "Pick any 4 digits. It's only used inside FauxCart to mimic real checkout security — it isn't linked to any real account."
+      : "Enter the same 4 digits again."}</p>
+    <div class="dots ${state.setupError?'shake':''}">${dots}</div>
+    <p style="text-align:center;font-size:12.5px;color:var(--warn);font-weight:600;height:16px;">${state.setupError ? "Didn't match — let's try again" : '&nbsp;'}</p>
+    <div class="keypad">
+      ${keys.map(k=>{
+        if(k==='') return `<div></div>`;
+        if(k==='⌫') return `<div class="key" onclick="backspaceSetupDigit()">⌫</div>`;
+        return `<div class="key" onclick="pressSetupDigit(${k})">${k}</div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function toggleInterest(cat){
+  const i = state.interests.indexOf(cat);
+  if(i>=0) state.interests.splice(i,1); else state.interests.push(cat);
+  render();
+}
+function finishOnboarding(useInterests){
+  state.onboarded = true;
+  if(useInterests && state.interests.length>0) state.filter = state.interests[0];
+  go('home');
+}
+
+function viewInterests(){
+  const cats = [...new Set(PRODUCTS.map(p=>p.cat))];
+  const icons = {Fashion:"👟",Gadgets:"🎧",Home:"🪴",Beauty:"💄"};
+  return `
+    <div class="eyebrow" style="margin-top:26px;">Step 2 of 2</div>
+    <h1 class="pagetitle">What tempts you most?</h1>
+    <p class="sub">Pick a few categories. FauxCart will lead with these so the sandbox actually matches what you'd be tempted to buy for real.</p>
+    <div class="interest-grid">
+      ${cats.map(c=>`
+        <div class="interest-card ${state.interests.includes(c)?'selected':''}" onclick="toggleInterest('${c}')">
+          <span class="ic-emoji">${icons[c]||'🛒'}</span>${c}
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:26px;">
+      <button class="btn btn-primary" ${state.interests.length===0?'disabled':''} onclick="finishOnboarding(true)">Continue</button>
+    </div>
+    <div class="skiplink" onclick="finishOnboarding(false)">Skip for now</div>
+  `;
+}
+
+function viewHome(){
+  const cats = ["All", ...new Set(PRODUCTS.map(p=>p.cat))];
+  const list = state.filter==="All" ? PRODUCTS : PRODUCTS.filter(p=>p.cat===state.filter);
+  return `
+    <div class="eyebrow">Sandbox Storefront</div>
+    <h1 class="pagetitle">Shop the urge away</h1>
+    <p class="sub">Everything here is phantom. Add it, buy it, watch it "arrive" — no card required.</p>
+    <div class="chiprow">
+      ${cats.map(c=>`<div class="chip ${state.filter===c?'active':''}" onclick="state.filter='${c}';render()">${c}</div>`).join('')}
+    </div>
+    <div class="grid">
+      ${list.map(p=>`
+        <div class="card">
+          <div onclick="go('product',{selected:${p.id},qtyPick:1})">
+            <div class="thumb" style="background:${p.bg}">${p.emoji}</div>
+            <p class="pname">${p.name}</p>
+            <p class="pcat">${p.cat}</p>
+            <div class="pprice"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--coin);display:inline-block;"></span>${fmt(p.price)} FC</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;" onclick="event.stopPropagation();quickAdd(${p.id})">${state.cart.find(c=>c.id===p.id) ? '+1 more (in cart: '+state.cart.find(c=>c.id===p.id).qty+')' : '+ Add to cart'}</button>
+        </div>`).join('')}
+    </div>`;
+}
+
+function quickAdd(id){
+  addToCart(id);
+  toast(findProduct(id).name + " added");
+}
+
+let toastTimer = null;
+function toast(msg){
+  let el = document.getElementById('toastEl');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'toastEl';
+    el.style.cssText = "position:absolute;left:18px;right:18px;bottom:90px;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:12.5px;font-weight:600;text-align:center;z-index:20;box-shadow:0 8px 20px rgba(0,0,0,0.25);";
+    document.querySelector('.phone').appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = "1";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.style.opacity = "0"; }, 1400);
+}
+
+function viewProduct(){
+  const p = findProduct(state.selected);
+  return `
+    <div class="backrow" onclick="go('home')">← Back</div>
+    <div class="thumb" style="background:${p.bg};height:220px;font-size:78px;">${p.emoji}</div>
+    <div class="eyebrow">${p.cat}</div>
+    <h1 class="pagetitle">${p.name}</h1>
+    <p class="sub">${p.blurb}</p>
+    <div class="receipt" style="margin-bottom:22px;">
+      <div class="row"><span style="font-weight:600;font-size:13px;">Simulated price</span><span class="pprice">${fmt(p.price)} FC</span></div>
+      <div class="row" style="margin-top:8px;"><span style="font-weight:600;font-size:13px;">Delivery</span><span style="font-size:12.5px;color:var(--ink-soft);">Standard · 48h simulated window</span></div>
+      <div class="row" style="margin-top:8px;"><span style="font-weight:600;font-size:13px;">Reviews</span><span style="font-size:12.5px;color:var(--ink-soft);">★★★★☆ (simulated)</span></div>
+    </div>
+    <div class="row" style="margin-bottom:14px;">
+      <span style="font-weight:600;font-size:13px;">Quantity</span>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="state.qtyPick=Math.max(1,(state.qtyPick||1)-1);render()">−</button>
+        <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;">${state.qtyPick||1}</span>
+        <button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="state.qtyPick=(state.qtyPick||1)+1;render()">+</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="addQtyToCart(${p.id})">Add to Cart</button>
+    <button class="btn btn-ghost" style="margin-top:10px;" onclick="go('home')">Keep browsing</button>
+  `;
+}
+
+function addQtyToCart(id){
+  const qty = state.qtyPick || 1;
+  const line = state.cart.find(c=>c.id===id);
+  if(line) line.qty += qty; else state.cart.push({id, qty});
+  state.qtyPick = 1;
+  toast(qty>1 ? qty+"× "+findProduct(id).name+" added" : findProduct(id).name+" added");
+  render();
+}
+
+function viewCart(){
+  if(state.cart.length===0){
+    return `
+      <div class="eyebrow">Your Cart</div>
+      <h1 class="pagetitle">Nothing in here yet</h1>
+      <div class="empty"><div class="e-emoji">🧺</div>Browse the storefront and add something you don't need.<br><br>
+      <button class="btn btn-ghost btn-sm" onclick="go('home')" style="margin-top:10px;">Go shopping</button></div>`;
+  }
+  const total = cartTotal();
+  return `
+    <div class="eyebrow">Your Cart</div>
+    <h1 class="pagetitle">Ready when you are</h1>
+    ${state.cart.map(c=>{
+      const p = findProduct(c.id);
+      return `
+      <div class="receipt">
+        <div class="row">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div class="thumb" style="width:48px;height:48px;background:${p.bg};font-size:22px;margin:0;">${p.emoji}</div>
+            <div>
+              <div style="font-weight:700;font-size:13px;">${p.name}</div>
+              <div style="font-size:11.5px;color:var(--ink-soft);">Qty ${c.qty}</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div class="pprice">${fmt(p.price*c.qty)} FC</div>
+            <div onclick="removeFromCart(${p.id})" style="font-size:11px;color:var(--warn);font-weight:600;cursor:pointer;margin-top:4px;">Remove</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+    <div class="row" style="margin:18px 0;font-weight:700;font-size:15px;">
+      <span>Total</span><span class="pprice" style="font-size:15px;">${fmt(total)} FC</span>
+    </div>
+    <button class="btn btn-primary" onclick="go('checkout')">Checkout</button>
+  `;
+}
+
+function viewCheckout(){
+  const total = cartTotal();
+  const enough = total <= state.coins;
+  return `
+    <div class="backrow" onclick="go('cart')">← Back</div>
+    <div class="eyebrow">Checkout</div>
+    <h1 class="pagetitle">Place your order</h1>
+    <p class="sub">This is the exact friction-free moment real platforms optimize for. Notice how easy it feels.</p>
+    <div class="receipt">
+      <div class="row"><span style="font-size:13px;font-weight:600;">Delivery speed</span><span style="font-size:12.5px;color:var(--ink-soft);">Simulated Standard (48h)</span></div>
+      <div class="row" style="margin-top:10px;"><span style="font-size:13px;font-weight:600;">Payment method</span><span style="font-size:12.5px;color:var(--ink-soft);">FauxCoin balance</span></div>
+      <div class="row" style="margin-top:10px;"><span style="font-size:13px;font-weight:600;">Order total</span><span class="pprice">${fmt(total)} FC</span></div>
+    </div>
+    <div class="row" style="margin:14px 0;font-size:12.5px;color:var(--ink-soft);">
+      <span>Wallet balance after order</span><span style="font-family:'IBM Plex Mono',monospace;">${fmt(state.coins - total)} FC</span>
+    </div>
+    ${!enough ? `<p style="color:var(--warn);font-size:12.5px;font-weight:600;margin-bottom:10px;">Not enough FauxCoins. Visit your Wallet to top up your daily allowance.</p>` : ''}
+    <button class="btn btn-primary" ${!enough?'disabled':''} onclick="go('auth',{authMethod:'passcode',passcodeInput:'',verifying:false,authSuccess:false})">Place Your Order</button>
+  `;
+}
+
+function pressDigit(d){
+  if(state.verifying) return;
+  if(state.passcodeInput.length>=4) return;
+  state.passcodeInput += d;
+  render();
+  if(state.passcodeInput.length===4){
+    state.verifying = true;
+    render();
+    setTimeout(()=>{
+      if(!state.userPasscode || state.passcodeInput === state.userPasscode){
+        state.authSuccess = true;
+        render();
+        setTimeout(()=>{ placeOrder(); }, 500);
+      } else {
+        state.authError = true;
+        state.verifying = false;
+        render();
+        setTimeout(()=>{
+          state.authError = false;
+          state.passcodeInput = '';
+          render();
+        }, 900);
+      }
+    }, 650);
+  }
+}
+function backspaceDigit(){
+  if(state.verifying) return;
+  state.passcodeInput = state.passcodeInput.slice(0,-1);
+  render();
+}
+function simulateFingerprint(){
+  if(state.verifying) return;
+  state.verifying = true;
+  render();
+  setTimeout(()=>{
+    state.authSuccess = true;
+    render();
+    setTimeout(()=>{ placeOrder(); }, 500);
+  }, 1300);
+}
+
+function viewAuth(){
+  const total = cartTotal();
+  const dots = Array.from({length:4}).map((_,i)=>`<div class="pdot ${i<state.passcodeInput.length?'filled':''}"></div>`).join('');
+  const keys = [1,2,3,4,5,6,7,8,9,'',0,'⌫'];
+  return `
+    <div class="backrow" onclick="go('checkout')">← Back</div>
+    <div class="eyebrow">Verify it's you</div>
+    <h1 class="pagetitle">Confirm to pay</h1>
+    <p class="sub">${fmt(total)} FC · This step is a mimic — nothing is scanned, read, or stored. It just recreates the real-world checkout moment.</p>
+    <div class="chiprow">
+      <div class="chip ${state.authMethod==='passcode'?'active':''}" onclick="go('auth',{authMethod:'passcode',passcodeInput:'',verifying:false,authSuccess:false})">Passcode</div>
+      <div class="chip ${state.authMethod==='touch'?'active':''}" onclick="go('auth',{authMethod:'touch',passcodeInput:'',verifying:false,authSuccess:false})">Touch ID</div>
+    </div>
+    ${state.authMethod==='passcode' ? `
+      <div class="dots ${state.authError?'shake':''}">${dots}</div>
+      <p style="text-align:center;font-size:12.5px;font-weight:600;height:16px;color:${state.authError?'var(--warn)':'var(--ink-soft)'};">${state.authError ? "Didn't match — try again" : (state.verifying ? (state.authSuccess ? 'Verified ✓' : 'Verifying…') : '&nbsp;')}</p>
+      <div class="keypad">
+        ${keys.map(k=>{
+          if(k==='') return `<div></div>`;
+          if(k==='⌫') return `<div class="key" onclick="backspaceDigit()">⌫</div>`;
+          return `<div class="key" onclick="pressDigit(${k})">${k}</div>`;
+        }).join('')}
+      </div>
+    ` : `
+      <div class="fingerprint-wrap">
+        <div class="fp-circle ${state.verifying && !state.authSuccess ? 'scanning':''} ${state.authSuccess?'success':''}" onclick="${state.verifying?'':'simulateFingerprint()'}">
+          ${state.authSuccess ? '✓' : '👆'}
+        </div>
+        <p style="margin-top:16px;font-size:12.5px;color:var(--ink-soft);font-weight:600;text-align:center;">
+          ${state.authSuccess ? 'Verified' : state.verifying ? 'Scanning…' : 'Tap to simulate your fingerprint'}
+        </p>
+      </div>
+    `}
+  `;
+}
+
+function viewConfirm(){
+  const o = getOrder(state.openOrder);
+  return `
+    <div class="stamp">
+      <svg viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="92" fill="none" stroke="#7FCFA4" stroke-width="3" stroke-dasharray="4 6"/>
+        <circle cx="100" cy="100" r="76" fill="none" stroke="#7FCFA4" stroke-width="2"/>
+        <path id="arcTop" d="M 30 100 A 70 70 0 0 1 170 100" fill="none"/>
+        <path id="arcBot" d="M 170 100 A 70 70 0 0 1 30 100" fill="none"/>
+        <text font-family="IBM Plex Mono, monospace" font-size="11.5" fill="#2A1B3D" letter-spacing="3">
+          <textPath href="#arcTop" startOffset="50%" text-anchor="middle">PHANTOM PURCHASE</textPath>
+        </text>
+        <text font-family="IBM Plex Mono, monospace" font-size="11.5" fill="#2A1B3D" letter-spacing="3">
+          <textPath href="#arcBot" startOffset="50%" text-anchor="middle">NO MONEY MOVED</textPath>
+        </text>
+        <text x="100" y="112" font-family="Fraunces, serif" font-size="42" fill="#173323" text-anchor="middle">✓</text>
+      </svg>
+    </div>
+    <h1 class="pagetitle" style="text-align:center;">Order confirmed</h1>
+    <p class="sub" style="text-align:center;">${o.id} · ${fmt(o.total)} FC · ${o.items.length} item${o.items.length>1?'s':''}</p>
+    <p class="sub" style="text-align:center;">The urge is answered. The wallet is untouched.</p>
+    <button class="btn btn-mint" onclick="go('tracking',{openOrder:'${o.id}'})">Track Package</button>
+    <button class="btn btn-ghost" style="margin-top:10px;" onclick="go('home')">Back to Shop</button>
+  `;
+}
+
+function viewTracking(){
+  const o = getOrder(state.openOrder);
+  const notifs = STAGE_NOTIFS.slice(0, o.stage+1).reverse();
+  return `
+    <div class="backrow" onclick="go('vault')">← Back</div>
+    <div class="eyebrow">Order ${o.id}</div>
+    <h1 class="pagetitle">Logistics Pipeline</h1>
+    <div class="timeline">
+      ${STAGES.map((label,i)=>`
+        <div class="tl-item">
+          <div class="tl-dot ${i<=o.stage?'done':''}">${i<=o.stage?'✓':''}</div>
+          <div>
+            <div class="tl-label">${label}</div>
+            <div class="tl-time">${i<=o.stage ? 'Complete' : 'Pending'}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    ${o.stage < STAGES.length-1 ? `
+      <div class="row" style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="pulse-dot"></span>
+          <span style="font-size:12.5px;font-weight:600;">${STAGES[o.stage+1]} update arriving${o.nextEta ? " in " + Math.max(0, Math.ceil((o.nextEta - Date.now())/1000)) + "s" : "…"}</span>
+        </div>
+      </div>` : `<button class="btn btn-mint" onclick="go('vault')">View in Vault</button>`}
+    <div class="eyebrow" style="margin-top:22px;">Push Notifications</div>
+    ${notifs.map(n=>`<div class="notif">📦 <span>${n}</span></div>`).join('')}
+  `;
+}
+
+function ringSvg(pct){
+  const r=17, c=2*Math.PI*r;
+  const offset = c - (pct/100)*c;
+  return `<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="${r}" fill="none" stroke="#E3F5EC" stroke-width="4"/>
+    <circle cx="22" cy="22" r="${r}" fill="none" stroke="#7FCFA4" stroke-width="4" stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round" transform="rotate(-90 22 22)"/>
+    <text x="22" y="26" font-size="10" text-anchor="middle" font-family="IBM Plex Mono, monospace" fill="#173323">${pct}%</text></svg>`;
+}
+
+function viewVault(){
+  if(state.vault.length===0){
+    return `
+      <div class="eyebrow">Cooling-Off Vault</div>
+      <h1 class="pagetitle">Nothing waiting</h1>
+      <div class="empty"><div class="e-emoji">🗄️</div>Delivered phantom items land here for a 48-hour rationalization window before you decide if you actually want the real thing.
+      ${state.orders.length>0 ? `<br><br><button class="btn btn-ghost btn-sm" onclick="go('tracking',{openOrder:'${state.orders[0].id}'})">Check active order</button>`:''}
+      </div>`;
+  }
+  return `
+    <div class="eyebrow">Cooling-Off Vault</div>
+    <h1 class="pagetitle">Sit with it a while</h1>
+    <p class="sub">Advance the cooling window, then decide honestly: phantom-only, or worth buying for real?</p>
+    ${state.vault.map((v,i)=>`
+      <div class="vaultcard">
+        <div class="row">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div class="thumb" style="width:46px;height:46px;background:${v.bg};font-size:22px;margin:0;">${v.emoji}</div>
+            <div>
+              <div style="font-weight:700;font-size:13px;">${v.name}</div>
+              <div style="font-size:11px;color:var(--ink-soft);">${v.orderId}</div>
+            </div>
+          </div>
+          <div class="ring">${ringSvg(v.cooling)}</div>
+        </div>
+        <div style="margin:12px 0 10px;">
+          ${v.cooling < 100
+            ? `<button class="btn btn-ghost btn-sm" onclick="coolMore(${i})">+12h cooling</button>`
+            : `<span style="font-size:11.5px;color:var(--ink-soft);font-weight:600;">Cooling complete</span>`}
+        </div>
+        <div class="row" style="gap:8px;">
+          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="archiveVaultItem(${i}, false)">Keep it phantom</button>
+          <button class="btn btn-warn btn-sm" style="flex:1;" ${v.cooling<100?'disabled':''} onclick="archiveVaultItem(${i}, true)">Purchase to Real World</button>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function viewWallet(){
+  const days = 7;
+  return `
+    <div class="eyebrow">Wallet</div>
+    <h1 class="pagetitle">Your FauxCoin balance</h1>
+    <div class="walletcard">
+      <div class="lbl">Available Balance</div>
+      <div class="bal">${fmt(state.coins)} FC</div>
+      <div style="font-size:12px;opacity:0.75;">${state.streak}-day streak · daily allowance 500 FC</div>
+      <div class="streakwrap">${Array.from({length:days}).map((_,i)=>`<div class="streakday ${i<state.streak?'on':''}"></div>`).join('')}</div>
+    </div>
+    <button class="btn ${state.lastClaimDate===todayKey() ? 'btn-ghost' : 'btn-mint'}" ${state.lastClaimDate===todayKey() ? 'disabled' : ''} onclick="claimDaily()">
+      ${state.lastClaimDate===todayKey() ? "Claimed for today ✓ — come back tomorrow" : "Claim today's 500 FC"}
+    </button>
+
+    <div class="fieldrow"><span>Sync to real disposable income</span>
+      <input type="checkbox" ${state.budgetSync?'checked':''} onchange="state.budgetSync=this.checked;render()">
+    </div>
+    <p class="sub" style="margin-top:2px;">When on, your daily FauxCoin allowance is calibrated to feel like your real spending headroom — same tension, zero real risk.</p>
+    ${state.budgetSync ? `
+    <div class="fieldrow"><span>Simulated weekly budget</span><span id="budgetval" style="font-family:'IBM Plex Mono',monospace;">₩350,000</span></div>
+    <input class="slider" type="range" min="100000" max="800000" step="10000" value="350000" oninput="document.getElementById('budgetval').textContent='₩'+Number(this.value).toLocaleString()">
+    ` : ''}
+
+    <div class="eyebrow" style="margin-top:24px;">Order History</div>
+    ${state.orders.length===0 ? `<p class="sub">No orders yet.</p>` :
+      state.orders.map(o=>`
+        <div class="receipt" style="cursor:pointer;" onclick="go('tracking',{openOrder:'${o.id}'})">
+          <div class="row">
+            <div>
+              <div style="font-weight:700;font-size:13px;">${o.id}</div>
+              <div style="font-size:11.5px;color:var(--ink-soft);">${STAGES[o.stage]} · ${o.items.length} item${o.items.length>1?'s':''}</div>
+            </div>
+            <div class="pprice">${fmt(o.total)} FC</div>
+          </div>
+        </div>`).join('')}
+  `;
+}
+
+render();
+</script>
+</body>
+</html>
