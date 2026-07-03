@@ -393,7 +393,7 @@ function archiveVaultItem(vaultIdx, toReal){
   const item = state.vault[vaultIdx];
   if(toReal){
     const q = encodeURIComponent(item.name);
-    window.open("https://www.google.com/search?tbm=shop&q=" + q, "_blank");
+    window.open("https://www.amazon.com/s?k=" + q, "_blank");
   }
   state.vault.splice(vaultIdx,1);
   render();
